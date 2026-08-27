@@ -12,12 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check project directory
-        run: |
-          pwd
-          ls -la
-          ls -la pubspec.yaml
-
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.47.1'
