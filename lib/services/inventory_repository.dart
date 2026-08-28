@@ -4,10 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/food_product.dart';
 import '../models/shopping_item.dart';
+import '../models/daily_plan.dart';
 
 class InventoryRepository {
   static const String _productsKey = 'inventory_products';
   static const String _shoppingItemsKey = 'shopping_items';
+  static const String _weeklyPlanKey = 'weekly_plan';
 
   final SharedPreferencesAsync _prefs = SharedPreferencesAsync();
 
@@ -251,6 +253,93 @@ class InventoryRepository {
 
       return product.quantity <= minimumStock;
     }).toList();
+  }
+
+  // ==========================================================
+  // WEEKLY PLAN
+  // ==========================================================
+
+  Future<List<DailyPlan>> getWeeklyPlan() async {
+    final data = await _prefs.getString(_weeklyPlanKey);
+
+    if (data == null || data.isEmpty) {
+      return _defaultWeeklyPlan();
+    }
+
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+
+      return decoded
+          .map(
+            (item) => DailyPlan.fromMap(
+              Map<String, dynamic>.from(item),
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return _defaultWeeklyPlan();
+    }
+  }
+
+  Future<DailyPlan?> getDailyPlan(String day) async {
+    final plans = await getWeeklyPlan();
+
+    try {
+      return plans.firstWhere(
+        (plan) => plan.day == day,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveDailyPlan(DailyPlan updatedPlan) async {
+    final plans = await getWeeklyPlan();
+
+    final index = plans.indexWhere(
+      (plan) => plan.day == updatedPlan.day,
+    );
+
+    if (index == -1) {
+      plans.add(updatedPlan);
+    } else {
+      plans[index] = updatedPlan;
+    }
+
+    await _saveWeeklyPlan(plans);
+  }
+
+  Future<void> _saveWeeklyPlan(
+    List<DailyPlan> plans,
+  ) async {
+    final data = jsonEncode(
+      plans.map((plan) => plan.toMap()).toList(),
+    );
+
+    await _prefs.setString(
+      _weeklyPlanKey,
+      data,
+    );
+  }
+
+  List<DailyPlan> _defaultWeeklyPlan() {
+    const days = [
+      'Lunedì',
+      'Martedì',
+      'Mercoledì',
+      'Giovedì',
+      'Venerdì',
+      'Sabato',
+      'Domenica',
+    ];
+
+    return days
+        .map(
+          (day) => DailyPlan(
+            day: day,
+          ),
+        )
+        .toList();
   }
   
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
 import 'pages/pantry_page.dart';
 import 'pages/shopping_page.dart';
+import 'pages/weekly_plan_page.dart';
 
 void main() {
   runApp(const InventoryHomeApp());
@@ -62,6 +63,7 @@ class _MainNavigationState extends State<MainNavigation> {
       HomePage(key: _homeKey),
       PantryPage(key: _pantryKey),
       const ShoppingPage(),
+      const WeeklyPlanPage(),
     ];
   }
 
@@ -103,6 +105,11 @@ class _MainNavigationState extends State<MainNavigation> {
             icon: Icon(Icons.shopping_cart_outlined),
             selectedIcon: Icon(Icons.shopping_cart),
             label: 'Spesa',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.document_scanner_outlined),
+            selectedIcon: Icon(Icons.document_scanner),
+            label: 'Piano',
           ),
         ],
       ),
