@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/food_product.dart';
 import '../models/shopping_item.dart';
-import '../models/daily_plan.dart';
 
 class InventoryRepository {
   static const String _productsKey = 'inventory_products';
@@ -259,87 +258,58 @@ class InventoryRepository {
   // WEEKLY PLAN
   // ==========================================================
 
-  Future<List<DailyPlan>> getWeeklyPlan() async {
+  Future<Map<String, String>> getDailyPlan(String day) async {
     final data = await _prefs.getString(_weeklyPlanKey);
 
     if (data == null || data.isEmpty) {
-      return _defaultWeeklyPlan();
+      return {};
     }
 
     try {
-      final List<dynamic> decoded = jsonDecode(data);
+      final decoded = jsonDecode(data);
 
-      return decoded
-          .map(
-            (item) => DailyPlan.fromMap(
-              Map<String, dynamic>.from(item),
-            ),
-          )
-          .toList();
+      if (decoded is! Map) {
+        return {};
+      }
+
+      final dayData = decoded[day];
+
+      if (dayData is! Map) {
+        return {};
+      }
+
+      return Map<String, String>.from(dayData);
     } catch (_) {
-      return _defaultWeeklyPlan();
+      return {};
     }
   }
 
-  Future<DailyPlan?> getDailyPlan(String day) async {
-    final plans = await getWeeklyPlan();
+  Future<void> saveDailyPlan({
+    required String day,
+    required Map<String, String> meals,
+  }) async {
+    final data = await _prefs.getString(_weeklyPlanKey);
 
-    try {
-      return plans.firstWhere(
-        (plan) => plan.day == day,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
+    Map<String, dynamic> weeklyPlan = {};
 
-  Future<void> saveDailyPlan(DailyPlan updatedPlan) async {
-    final plans = await getWeeklyPlan();
+    if (data != null && data.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(data);
 
-    final index = plans.indexWhere(
-      (plan) => plan.day == updatedPlan.day,
-    );
-
-    if (index == -1) {
-      plans.add(updatedPlan);
-    } else {
-      plans[index] = updatedPlan;
+        if (decoded is Map) {
+          weeklyPlan = Map<String, dynamic>.from(decoded);
+        }
+      } catch (_) {
+        weeklyPlan = {};
+      }
     }
 
-    await _saveWeeklyPlan(plans);
-  }
-
-  Future<void> _saveWeeklyPlan(
-    List<DailyPlan> plans,
-  ) async {
-    final data = jsonEncode(
-      plans.map((plan) => plan.toMap()).toList(),
-    );
+    weeklyPlan[day] = meals;
 
     await _prefs.setString(
       _weeklyPlanKey,
-      data,
+      jsonEncode(weeklyPlan),
     );
-  }
-
-  List<DailyPlan> _defaultWeeklyPlan() {
-    const days = [
-      'Lunedì',
-      'Martedì',
-      'Mercoledì',
-      'Giovedì',
-      'Venerdì',
-      'Sabato',
-      'Domenica',
-    ];
-
-    return days
-        .map(
-          (day) => DailyPlan(
-            day: day,
-          ),
-        )
-        .toList();
   }
   
 }
